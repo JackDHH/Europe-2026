@@ -38,6 +38,16 @@ header.hero { padding: 36px 0 18px; text-align: center; }
 .now .today ul { margin: 6px 0 0; padding-left: 20px; }
 .bar { height: 10px; border-radius: 10px; background: var(--line); overflow: hidden; grid-column: 1 / -1; }
 .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent-2), var(--gold), var(--accent)); border-radius: 10px; }
+.wx { padding: 16px 20px; margin: -6px 0 18px; display: grid; gap: 10px; }
+.wx .row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.wx .ico { font-size: 44px; line-height: 1; }
+.wx .t { font-size: 40px; font-weight: 800; line-height: 1; }
+.wx .t small { font-size: 15px; font-weight: 600; color: var(--muted); }
+.wx .cmp { font-size: 15px; }
+.wx .days { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.wx .days div { background: var(--bg); border-radius: 10px; padding: 6px 8px; text-align: center; font-size: 14px; }
+.wx .days span { display: block; color: var(--muted); font-size: 12px; font-weight: 700; }
+.wx .foot { color: var(--muted); font-size: 12px; }
 .mapcard { padding: 12px; margin-bottom: 18px; }
 .maptools { display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: wrap; padding: 4px 6px 10px; }
 .maptools h3 { margin: 0; font-size: 16px; }
@@ -111,6 +121,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 3
   </header>
 
   <section class="card now" id="now" aria-live="polite"></section>
+  <section class="card wx" id="wx" hidden aria-live="polite"></section>
 
   <section class="card mapcard">
     <div class="maptools">
@@ -244,6 +255,42 @@ function renderStops() {
   }).join("");
 }
 
+// ---- weather where we are (live from Open-Meteo; falls back to weather.js updated every 3 hours) ----
+const WMO = (c) => c === 0 ? ["☀️", "Clear"] : c <= 2 ? ["⛅", "Partly cloudy"] : c === 3 ? ["☁️", "Cloudy"] : c <= 48 ? ["🌫️", "Fog"] : c <= 57 ? ["🌦️", "Drizzle"] : c <= 67 ? ["🌧️", "Rain"] : c <= 77 ? ["🌨️", "Snow"] : c <= 82 ? ["🌧️", "Showers"] : c <= 86 ? ["🌨️", "Snow showers"] : ["⛈️", "Thunderstorm"];
+const ICON = { clear: "☀️", "partly cloudy": "⛅", overcast: "☁️", fog: "🌫️", drizzle: "🌦️", rain: "🌧️", snow: "🌨️", "rain showers": "🌧️", "snow showers": "🌨️", thunderstorm: "⛈️" };
+async function om(lat, lng) {
+  const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,apparent_temperature,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=4`);
+  if (!r.ok) throw new Error(r.status); return r.json();
+}
+function wxStop() {
+  if (W.stop) return W.stop.id === "mel0" ? null : W.stop.id === "home" ? null : W.stop;
+  return null;
+}
+async function renderWx() {
+  const s = wxStop(); if (!s) return;
+  let w = null;
+  try {
+    const [j, m] = await Promise.all([om(s.ll[0], s.ll[1]), om(-37.8136, 144.9631).catch(() => null)]);
+    const c = WMO(+j.current.weather_code);
+    w = { ico: c[0], text: c[1], temp: j.current.temperature_2m, feels: j.current.apparent_temperature, mel: m ? m.current.temperature_2m : null, at: Date.now(),
+      daily: j.daily.time.map((t, i) => ({ date: t, high: j.daily.temperature_2m_max[i], low: j.daily.temperature_2m_min[i], rain: j.daily.precipitation_probability_max[i] || 0, ico: WMO(+j.daily.weather_code[i])[0] })) };
+  } catch (e) {
+    try {
+      await new Promise((res, rej) => { const sc = document.createElement("script"); sc.src = "weather.js?v=" + Math.floor(Date.now() / 36e5); sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
+      const x = window.TRIP_WEATHER;
+      if (x) w = { ico: ICON[x.condition] || "🌡️", text: x.conditionText, temp: x.temp, feels: x.feels, mel: x.melbourne, at: x.updatedAt, daily: x.daily.map((d) => Object.assign({ ico: "" }, d)) };
+    } catch (e2) {}
+  }
+  if (!w) return;
+  const diff = w.mel != null ? Math.round(w.mel - w.temp) : null;
+  const cmp = diff == null ? "" : diff >= 3 ? `🥶 That's <b>${diff}° colder</b> than Melbourne right now (${Math.round(w.mel)}°).` : diff <= -3 ? `🥵 That's <b>${-diff}° warmer</b> than Melbourne right now (${Math.round(w.mel)}°).` : `About the same as Melbourne right now (${Math.round(w.mel)}°).`;
+  const name = s.city.replace(/ \(.*\)/, "");
+  $("#wx").innerHTML = `<div class="row"><span class="ico" aria-hidden="true">${w.ico}</span><div><div class="t">${Math.round(w.temp)}°${Number.isFinite(w.feels) && Math.abs(w.feels - w.temp) >= 2 ? ` <small>feels like ${Math.round(w.feels)}°</small>` : ""}</div><div>${esc(w.text)} in <b>${esc(name)}</b></div></div></div>
+    ${cmp ? `<div class="cmp">${cmp}</div>` : ""}
+    <div class="days">${w.daily.slice(0, 4).map((d, i) => `<div><span>${i === 0 ? "Today" : D(d.date).toLocaleDateString("en-AU", { weekday: "short", timeZone: "UTC" })}</span>${d.ico || ""} <b>${Math.round(d.high)}°</b> / ${Math.round(d.low)}°${d.rain >= 30 ? `<br><small>💧${Math.round(d.rain)}%</small>` : ""}</div>`).join("")}</div>
+    <div class="foot">Weather updated ${new Date(w.at).toLocaleString("en-AU", { hour: "numeric", minute: "2-digit", day: "numeric", month: "short" })} (your time) · Open-Meteo</div>`;
+  $("#wx").hidden = false;
+}
 let view = "europe", world = null, lastProj = null;
 function photoPins(proj, k) {
   const g = d3.select("#map").append("g");
@@ -306,7 +353,7 @@ document.addEventListener("keydown", (e) => { const c = e.target.closest && e.ta
 let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (world) renderMap(); }, 200); });
 
 $("#upd").textContent = fmt(DATA.updated, { day: "numeric", month: "long", year: "numeric" });
-renderNow(); renderJournal(); renderStops();
+renderNow(); renderJournal(); renderStops(); renderWx(); setInterval(renderWx, 30 * 60000);
 if ((DATA.journal || []).some((p) => p.photos.some((x) => x.ll))) $("#phKey").hidden = false;
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>

@@ -1,0 +1,25 @@
+name: Update trip weather
+on:
+  schedule:
+    - cron: "17 */3 * * *"   # every 3 hours
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  weather:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch weather for where we are
+        run: python3 tools/update_weather.py
+      - name: Commit if changed
+        run: |
+          git config user.name "trip-weather-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add weather.js
+          git diff --cached --quiet || (git commit -m "Update weather" && git push)
+      - name: Refresh the CDN copy
+        run: curl -s https://purge.jsdelivr.net/gh/JackDHH/Europe-2026@main/weather.js || true
