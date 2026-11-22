@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Horners' Big Trip</title>
+<meta name="description" content="Follow the Horner family around Europe and Bali, 29 Nov 2026 to 11 Jan 2027.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+<style>
+:root {
+  --bg: #f6f2ea; --surface: #fffdf8; --ink: #1f2a33; --muted: #6a7480; --line: #e4ddd0;
+  --accent: #b23a48; --accent-2: #2e6f73; --gold: #d99a2b; --past: #a8b0b8;
+  --land: #e9e2d4; --sea: #dfe9ec; --shadow: 0 6px 24px rgba(31,42,51,.08);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171c; --surface: #1a2128; --ink: #eef1f3; --muted: #9aa5af; --line: #2a333c;
+    --accent: #e2677a; --accent-2: #6fb7ba; --gold: #e9b350; --past: #5d6873;
+    --land: #27313a; --sea: #161d23; --shadow: 0 6px 24px rgba(0,0,0,.35); color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px 48px; }
+header.hero { padding: 36px 0 18px; text-align: center; }
+.hero .kicker { color: var(--accent); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; }
+.hero h1 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(32px, 6vw, 52px); margin: 6px 0 4px; line-height: 1.05; }
+.hero p { color: var(--muted); margin: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+.now { padding: 20px 22px; display: grid; gap: 12px; grid-template-columns: auto minmax(0,1fr); align-items: center; margin: 10px 0 18px; }
+.now .big { font-size: 54px; line-height: 1; }
+.now .label { font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-2); }
+.now h2 { margin: 2px 0; font-size: clamp(22px, 4vw, 30px); font-family: Georgia, serif; }
+.now .sub { color: var(--muted); }
+.now .today { grid-column: 1 / -1; border-top: 1px dashed var(--line); padding-top: 10px; }
+.now .today ul { margin: 6px 0 0; padding-left: 20px; }
+.bar { height: 10px; border-radius: 10px; background: var(--line); overflow: hidden; grid-column: 1 / -1; }
+.bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent-2), var(--gold), var(--accent)); border-radius: 10px; }
+.mapcard { padding: 12px; margin-bottom: 18px; }
+.maptools { display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: wrap; padding: 4px 6px 10px; }
+.maptools h3 { margin: 0; font-size: 16px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { background: none; border: 0; padding: 6px 14px; font: inherit; font-size: 14px; color: var(--ink); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+#map { width: 100%; height: auto; display: block; border-radius: 12px; background: var(--sea); }
+#map .land { fill: var(--land); stroke: var(--sea); stroke-width: .6; }
+#map .route { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 5; }
+#map .dot { fill: var(--surface); stroke: var(--accent-2); stroke-width: 2.5; }
+#map .dot.past { stroke: var(--past); fill: var(--past); }
+#map .here { fill: var(--accent); }
+#map .pulse { fill: var(--accent); opacity: .35; animation: pulse 1.8s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes pulse { from { transform: scale(1); opacity: .45; } to { transform: scale(3.2); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #map .pulse { animation: none; } }
+#map text { font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--sea); stroke-width: 3px; }
+.maperr { color: var(--muted); font-size: 14px; padding: 8px; }
+h3.section { font-family: Georgia, serif; font-size: 24px; margin: 26px 0 10px; }
+.stops { display: grid; gap: 12px; }
+.stop { padding: 16px 18px; border-left: 6px solid var(--accent-2); }
+.stop.past { opacity: .6; border-left-color: var(--past); }
+.stop.current { border-left-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+.stop-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.stop-head .flag { font-size: 26px; }
+.stop-head h4 { margin: 0; font-size: 20px; }
+.stop-head .dates { color: var(--muted); font-size: 14px; }
+.stop-head .badge { font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: #fff; }
+.stop-head .done { font-size: 12px; font-weight: 800; color: var(--muted); }
+.stop .note { margin: 4px 0 0; color: var(--muted); }
+.days { display: grid; gap: 6px; margin-top: 10px; }
+.day { display: grid; grid-template-columns: 74px minmax(0,1fr); gap: 10px; font-size: 15px; }
+.day .d { color: var(--muted); font-weight: 700; font-size: 13px; padding-top: 1px; }
+.day ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.day li::before { content: "• "; color: var(--gold); }
+.day li.trav::before { content: ""; }
+.day.today .d { color: var(--accent); }
+.day.today { background: color-mix(in srgb, var(--accent) 8%, transparent); border-radius: 8px; padding: 4px 6px; margin: 0 -6px; }
+details.more summary { cursor: pointer; color: var(--accent-2); font-weight: 700; font-size: 14px; margin-top: 8px; }
+footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 30px; }
+@media (max-width: 560px) {
+  .now { grid-template-columns: 1fr; text-align: left; }
+  .now .big { font-size: 44px; }
+  .day { grid-template-columns: 62px minmax(0,1fr); }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker">Europe &amp; Bali · Summer 2026–27</div>
+    <h1>The Horners' Big Trip</h1>
+    <p>Follow along as we go from London to Bali via a white Christmas in the Alps.</p>
+  </header>
+
+  <section class="card now" id="now" aria-live="polite"></section>
+
+  <section class="card mapcard">
+    <div class="maptools">
+      <h3>Our route</h3>
+      <div class="seg" role="group" aria-label="Map view">
+        <button data-view="europe" aria-pressed="true">Europe</button>
+        <button data-view="world" aria-pressed="false">Whole trip</button>
+      </div>
+    </div>
+    <svg id="map" viewBox="0 0 960 560" role="img" aria-label="Map of our route"></svg>
+    <div class="maperr" id="mapErr" hidden>The map couldn't load just now. The list of stops below has everything.</div>
+  </section>
+
+  <h3 class="section">Where we're going</h3>
+  <div class="stops" id="stops"></div>
+
+  <footer>Made with love for family and friends · Last updated <span id="upd"></span> · Highlights may change as we go.</footer>
+</div>
+
+<script>
+const DATA = {"stops": [{"id": "mel0", "city": "Melbourne", "country": "Australia", "flag": "🇦🇺", "tz": "Australia/Melbourne", "ll": [-37.8136, 144.9631], "in": "2026-11-28", "out": "2026-11-29", "kind": "home", "note": "Bags packed, off to the airport!"}, {"id": "lax", "city": "Los Angeles", "country": "USA", "flag": "🇺🇸", "tz": "America/Los_Angeles", "ll": [34.0522, -118.2437], "in": "2026-11-29", "out": "2026-11-30", "kind": "stopover", "note": "A day's stopover on the way to London"}, {"id": "lon", "city": "London", "country": "England", "flag": "🇬🇧", "tz": "Europe/London", "ll": [51.5074, -0.1278], "in": "2026-11-30", "out": "2026-12-05"}, {"id": "par", "city": "Paris", "country": "France", "flag": "🇫🇷", "tz": "Europe/Paris", "ll": [48.8566, 2.3522], "in": "2026-12-05", "out": "2026-12-09"}, {"id": "str", "city": "Strasbourg", "country": "France", "flag": "🇫🇷", "tz": "Europe/Paris", "ll": [48.5734, 7.7521], "in": "2026-12-09", "out": "2026-12-11"}, {"id": "ghe", "city": "Ghent", "country": "Belgium", "flag": "🇧🇪", "tz": "Europe/Brussels", "ll": [51.0543, 3.7174], "in": "2026-12-11", "out": "2026-12-15"}, {"id": "nur", "city": "Nürnberg", "country": "Germany", "flag": "🇩🇪", "tz": "Europe/Berlin", "ll": [49.4521, 11.0767], "in": "2026-12-15", "out": "2026-12-18"}, {"id": "fre", "city": "Freising (near Munich)", "country": "Germany", "flag": "🇩🇪", "tz": "Europe/Berlin", "ll": [48.4029, 11.7488], "in": "2026-12-18", "out": "2026-12-22"}, {"id": "wer", "city": "Werfenweng (the Alps)", "country": "Austria", "flag": "🇦🇹", "tz": "Europe/Vienna", "ll": [47.4626, 13.258], "in": "2026-12-22", "out": "2026-12-26", "note": "A white Christmas in the mountains ⛄"}, {"id": "vie", "city": "Vienna", "country": "Austria", "flag": "🇦🇹", "tz": "Europe/Vienna", "ll": [48.2082, 16.3738], "in": "2026-12-26", "out": "2026-12-30"}, {"id": "cph", "city": "Copenhagen", "country": "Denmark", "flag": "🇩🇰", "tz": "Europe/Copenhagen", "ll": [55.6761, 12.5683], "in": "2026-12-30", "out": "2027-01-03", "note": "New Year's Eve at Tivoli Gardens 🎆"}, {"id": "auh", "city": "Abu Dhabi (in transit)", "country": "UAE", "flag": "🇦🇪", "tz": "Asia/Dubai", "ll": [24.4539, 54.3773], "in": "2027-01-03", "out": "2027-01-04", "kind": "stopover", "note": "Flying from Europe to Bali"}, {"id": "bal", "city": "Bali", "country": "Indonesia", "flag": "🇮🇩", "tz": "Asia/Makassar", "ll": [-8.6705, 115.2126], "in": "2027-01-04", "out": "2027-01-10", "note": "Pool, beach and a well-earned rest 🏝"}, {"id": "home", "city": "Home", "country": "Australia", "flag": "🇦🇺", "tz": "Australia/Melbourne", "ll": [-38.3436, 143.585], "in": "2027-01-10", "out": "2027-01-12", "kind": "home", "note": "Flying home overnight and a big sleep-in 😴"}], "days": {"2026-12-22": [{"t": "Salzburg stopover: Christmas market and Hohensalzburg Fortress (on the way to Werfenweng)", "am": true}], "2027-01-02": [{"t": "Day trip: Kronborg Castle (Hamlet's castle), Helsingør", "am": true}, {"t": "Tivoli Gardens: rides and lights (last night)", "am": false}], "2027-01-07": [{"t": "Waterbom Bali water park", "am": true}], "2026-12-29": [{"t": "Time Travel Vienna: 5D ride and VR through Vienna's history", "am": true}, {"t": "Climb St Stephen's South Tower", "am": true}, {"t": "Sachertorte at Café Sacher or Demel", "am": false}, {"t": "Belvedere palace (Klimt's The Kiss) and Christmas market", "am": false}, {"t": "Ice skating at the Wiener Eislaufverein", "am": false}], "2026-12-04": [{"t": "Hop-on hop-off bus tour of London", "am": true}, {"t": "Changing of the Guard at Buckingham Palace", "am": true}], "2027-01-01": [{"t": "New Year's Day walk to Amalienborg and the Little Mermaid", "am": false}], "2026-12-27": [{"t": "Schönbrunn Palace, Christmas market and Gloriette", "am": true}, {"t": "St Stephen's, Graben lights and schnitzel dinner", "am": false}], "2026-12-06": [{"t": "The Louvre", "am": true}, {"t": "Moulin Rouge show", "am": false}], "2026-12-07": [{"t": "Eiffel Tower: summit by lift", "am": false}], "2026-12-02": [{"t": "Harry Potter: Warner Bros Studio Tour 🧙", "am": true}], "2026-12-25": [{"t": "Christmas Day at the resort", "am": false}], "2026-12-30": [{"t": "Hot dogs, Strøget and Nyhavn", "am": false}, {"t": "Round Tower spiral ramp and view", "am": false}], "2026-12-08": [{"t": "Disneyland Paris day 🏰", "am": true}], "2026-12-15": [{"t": "Christkindlesmarkt on the Hauptmarkt", "am": false}], "2026-12-14": [{"t": "Gravensteen: Castle of the Counts", "am": true}, {"t": "Guided walking tour of the old city", "am": false}, {"t": "Belfry of Ghent: tower with a lift", "am": false}, {"t": "Winter festival: Ferris wheel, ice skating and the Christmas market", "am": false}], "2026-12-16": [{"t": "Imperial Castle (Kaiserburg)", "am": true}, {"t": "Old-town afternoon: Kinderweihnacht, Sister Cities market, Lebkuchen shopping", "am": false}], "2026-12-11": [{"t": "Petite France: canals and half-timbered houses", "am": true}], "2026-11-29": [{"t": "LAX stopover: Hollywood Boulevard + Santa Monica Pier", "am": true}], "2026-12-18": [{"t": "Freising old town and the Domberg (cathedral hill)", "am": false}, {"t": "Dinner at Weihenstephan, the world's oldest brewery", "am": false}], "2026-12-17": [{"t": "Documentation Center Nazi Party Rally Grounds", "am": true}], "2026-12-31": [{"t": "Rosenborg Castle and the crown jewels", "am": true}, {"t": "New Year's Eve at Tivoli Gardens: dinner, concert and midnight fireworks", "am": false}], "2026-12-26": [{"t": "Last night of the Rathausplatz Christmas market", "am": false}], "2026-12-24": [{"t": "Christmas Eve dinner and celebrations at the resort", "am": false}], "2026-12-28": [{"t": "Therme Wien: thermal spa with slides", "am": true}, {"t": "Prater: Giant Ferris Wheel, Winter Market and Rollercoaster Restaurant", "am": false}], "2026-12-03": [{"t": "Postal Museum and Mail Rail ride", "am": true}, {"t": "Mundo Pixar Experience, Wembley", "am": false}], "2026-12-09": [{"t": "Christmas market by night: Place Kléber tree and Christkindelsmärik", "am": false}]}, "travel": {"2026-11-29": "✈ Melbourne → Sydney → Los Angeles", "2026-11-30": "✈ Overnight to London", "2026-12-05": "🚄 Eurostar to Paris", "2026-12-09": "🚄 Fast train to Strasbourg", "2026-12-11": "🚆 Trains to Ghent", "2026-12-15": "🚆 Train to Nürnberg", "2026-12-18": "🚆 Train to Freising", "2026-12-22": "🚆 Train to the Alps (via Salzburg)", "2026-12-26": "🚆 Train to Vienna", "2026-12-30": "✈ Fly to Copenhagen", "2027-01-03": "✈ Copenhagen → Abu Dhabi → Bali (overnight)", "2027-01-04": "🏝 Land in Bali", "2027-01-10": "✈ Fly home to Melbourne", "2027-01-11": "🏡 Home sweet home"}, "start": "2026-11-29", "end": "2027-01-11", "updated": "2026-11-22"};
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const D = (iso) => new Date(iso + "T00:00:00Z");
+const addDays = (dt, n) => new Date(dt.getTime() + n * 864e5);
+const isoOf = (dt) => dt.toISOString().slice(0, 10);
+const fmt = (iso, o) => D(iso).toLocaleDateString("en-AU", Object.assign({ timeZone: "UTC" }, o));
+const fmtDay = (iso) => fmt(iso, { weekday: "short", day: "numeric", month: "short" });
+const localISO = (tz, now) => new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+const localTime = (tz, now) => new Intl.DateTimeFormat("en-AU", { timeZone: tz, hour: "numeric", minute: "2-digit" }).format(now);
+
+// ?now=2026-12-10T09:00 lets you preview a date
+const qs = new URLSearchParams(location.search).get("now");
+const NOW = qs && !isNaN(Date.parse(qs)) ? new Date(qs) : new Date();
+
+function whereNow() {
+  for (const s of DATA.stops) {
+    const d = localISO(s.tz, NOW);
+    if (d >= s.in && d < s.out) return { stop: s, date: d };
+  }
+  const mel = localISO("Australia/Melbourne", NOW);
+  if (mel < DATA.stops[0].in) return { before: true, date: mel };
+  return { after: true, date: mel };
+}
+const W = whereNow();
+
+function itemsFor(d) {
+  const out = [];
+  (DATA.days[d] || []).filter((x) => x.am).forEach((x) => out.push({ t: x.t }));
+  if (DATA.travel[d]) out.push({ t: DATA.travel[d], trav: true });
+  (DATA.days[d] || []).filter((x) => !x.am).forEach((x) => out.push({ t: x.t }));
+  return out;
+}
+// Items for one stop's card: a travel day is split between the city we leave (morning + the journey) and the city we arrive in (afternoon/evening).
+function itemsForStop(s, d) {
+  const all = DATA.days[d] || [], trav = DATA.travel[d];
+  const stay = !s.kind;
+  if (stay && d === s.out) return [...all.filter((x) => x.am).map((x) => ({ t: x.t })), ...(trav ? [{ t: trav, trav: true }] : [])];
+  if (stay && d === s.in) return [{ t: "📍 Arrive in " + s.city.replace(/ \(.*\)/, ""), trav: true }, ...all.filter((x) => !x.am).map((x) => ({ t: x.t }))];
+  return itemsFor(d);
+}
+
+function renderNow() {
+  const total = Math.round((D(DATA.end) - D(DATA.start)) / 864e5) + 1;
+  let html = "";
+  if (W.before) {
+    const n = Math.ceil((D(DATA.start) - D(W.date)) / 864e5);
+    html = `<div class="big">🧳</div><div><div class="label">Countdown</div><h2>${n} day${n === 1 ? "" : "s"} to go!</h2><div class="sub">We leave Melbourne on ${fmtDay(DATA.start)}.</div></div>`;
+  } else if (W.after) {
+    html = `<div class="big">🏡</div><div><div class="label">Trip complete</div><h2>Home again!</h2><div class="sub">${total} days, 9 countries, too many Christmas markets to count. Thanks for following along!</div></div>`;
+  } else {
+    const s = W.stop, dayN = Math.max(1, Math.round((D(W.date) - D(DATA.start)) / 864e5) + 1);
+    const nights = Math.round((D(s.out) - D(s.in)) / 864e5);
+    const nightN = Math.round((D(W.date) - D(s.in)) / 864e5) + 1;
+    const its = itemsFor(W.date);
+    const pct = Math.min(100, Math.round(dayN / total * 100));
+    html = `<div class="big">${s.flag}</div><div><div class="label">Where we are now · Day ${dayN} of ${total}</div>
+      <h2>${esc(s.city)}</h2><div class="sub">${esc(s.country)} · it's ${esc(localTime(s.tz, NOW))} there${s.kind ? "" : ` · night ${nightN} of ${nights}`}</div></div>
+      <div class="bar" aria-label="${pct}% of the trip done"><i style="width:${pct}%"></i></div>
+      ${its.length ? `<div class="today"><b>Today (${fmtDay(W.date)}):</b><ul>${its.map((i) => `<li>${esc(i.t)}</li>`).join("")}</ul></div>` : `<div class="today"><b>Today:</b> exploring ${esc(s.city)} at our own pace.</div>`}`;
+  }
+  $("#now").innerHTML = html;
+}
+
+function renderStops() {
+  const today = W.date;
+  $("#stops").innerHTML = DATA.stops.map((s) => {
+    const past = !W.before && (W.after || s.out <= today) && !(W.stop && W.stop.id === s.id);
+    const cur = W.stop && W.stop.id === s.id;
+    const days = [];
+    const last = s.kind ? addDays(D(s.out), -1) : D(s.out);
+    for (let dt = D(s.in); dt <= last; dt = addDays(dt, 1)) days.push(isoOf(dt));
+    if (s.id === "home") days.push("2027-01-11");
+    const rows = days.map((d) => {
+      const its = itemsForStop(s, d);
+      if (!its.length) return "";
+      return `<div class="day${d === today && cur ? " today" : ""}"><div class="d">${fmtDay(d)}</div><ul>${its.map((i) => `<li class="${i.trav ? "trav" : ""}">${esc(i.t)}</li>`).join("")}</ul></div>`;
+    }).join("");
+    const nights = Math.round((D(s.out) - D(s.in)) / 864e5);
+    const when = s.kind ? fmtDay(s.in) : `${fmt(s.in, { day: "numeric", month: "short" })} – ${fmt(s.out, { day: "numeric", month: "short" })} · ${nights} night${nights === 1 ? "" : "s"}`;
+    const body = rows ? (past ? `<details class="more"><summary>What we got up to</summary><div class="days">${rows}</div></details>` : `<div class="days">${rows}</div>`) : "";
+    return `<article class="card stop${past ? " past" : ""}${cur ? " current" : ""}" id="stop-${s.id}">
+      <div class="stop-head"><span class="flag">${s.flag}</span><h4>${esc(s.city)}</h4><span class="dates">${esc(when)}</span>${cur ? `<span class="badge">📍 We're here</span>` : past ? `<span class="done">✓ Done</span>` : ""}</div>
+      ${s.note ? `<p class="note">${esc(s.note)}</p>` : ""}${body}</article>`;
+  }).join("");
+}
+
+let view = "europe", world = null;
+async function renderMap() {
+  const svg = d3.select("#map"); svg.selectAll("*").remove();
+  const w = 960, h = 560;
+  const stops = DATA.stops.filter((s) => view === "world" || (s.ll[1] > -20 && s.ll[1] < 30 && s.ll[0] > 35));
+  const proj = view === "world" ? d3.geoNaturalEarth1() : d3.geoMercator();
+  const fc = { type: "FeatureCollection", features: stops.map((s) => ({ type: "Feature", geometry: { type: "Point", coordinates: [s.ll[1], s.ll[0]] } })) };
+  proj.fitExtent([[50, 40], [w - 50, h - 40]], view === "world" ? { type: "Sphere" } : fc);
+  const path = d3.geoPath(proj);
+  svg.append("g").selectAll("path").data(world.features).join("path").attr("class", "land").attr("d", path);
+  const line = { type: "LineString", coordinates: stops.filter((s) => s.id !== "home" || view === "world").map((s) => [s.ll[1], s.ll[0]]) };
+  svg.append("path").attr("class", "route").attr("d", path(line));
+  const g = svg.append("g");
+  const k = Math.min(2.4, Math.max(1, 960 / (document.getElementById("map").clientWidth || 960)));
+  svg.style("--k", k); g.style("font-size", (12 * k) + "px");
+  stops.forEach((s, i) => {
+    const [x, y] = proj([s.ll[1], s.ll[0]]);
+    const cur = W.stop && W.stop.id === s.id;
+    const past = !W.before && (W.after || s.out <= W.date) && !cur;
+    if (cur) g.append("circle").attr("class", "pulse").attr("cx", x).attr("cy", y).attr("r", 7 * k);
+    g.append("circle").attr("class", cur ? "here" : "dot" + (past ? " past" : "")).attr("cx", x).attr("cy", y).attr("r", (cur ? 7 : 5) * k)
+      .append("title").text(`${s.city} · ${fmtDay(s.in)}`);
+    const WORLD_LABEL = { mel0: "Melbourne", lax: "Los Angeles", cph: "Europe", auh: "Abu Dhabi", bal: "Bali" };
+    let name = s.city.replace(/ \(.*\)/, "");
+    if (view === "world") { if (!(s.id in WORLD_LABEL) && !cur) return; name = cur && !(s.id in WORLD_LABEL) ? name : WORLD_LABEL[s.id]; }
+    const right = view === "world" || s.id !== "str";
+    g.append("text").attr("x", x + (right ? 9 : -9) * k).attr("y", y + (view === "world" ? (s.id === "cph" ? -12 : 4) : s.id === "str" ? 16 : s.id === "fre" || s.id === "nur" ? -8 : 4) * k).style("stroke-width", 3 * k + "px").attr("text-anchor", right ? "start" : "end").text((cur ? "📍 " : "") + name);
+  });
+}
+async function initMap() {
+  try {
+    const topo = await (await fetch("https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json")).json();
+    world = topojson.feature(topo, topo.objects.countries);
+    if (W.stop && ["mel0", "lax", "auh", "bal", "home"].includes(W.stop.id)) setView("world"); else renderMap();
+  } catch (e) { $("#mapErr").hidden = false; $("#map").style.display = "none"; }
+}
+function setView(v) {
+  view = v;
+  document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+  if (world) renderMap();
+}
+document.addEventListener("click", (e) => { const b = e.target.closest("[data-view]"); if (b) setView(b.dataset.view); });
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (world) renderMap(); }, 200); });
+
+$("#upd").textContent = fmt(DATA.updated, { day: "numeric", month: "long", year: "numeric" });
+renderNow(); renderStops();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js" onload="initMap()" onerror="document.getElementById('mapErr').hidden=false"></script>
+</body>
+</html>
