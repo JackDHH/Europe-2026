@@ -53,6 +53,8 @@ header.hero { padding: 36px 0 18px; text-align: center; }
 #map .pulse { fill: var(--accent); opacity: .35; animation: pulse 1.8s ease-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes pulse { from { transform: scale(1); opacity: .45; } to { transform: scale(3.2); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #map .pulse { animation: none; } }
+#map .ph { fill: var(--gold); stroke: var(--surface); cursor: pointer; }
+#map .ph:hover, #map .ph:focus { fill: var(--accent); outline: none; }
 #map text { font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--sea); stroke-width: 3px; }
 .maperr { color: var(--muted); font-size: 14px; padding: 8px; }
 h3.section { font-family: Georgia, serif; font-size: 24px; margin: 26px 0 10px; }
@@ -112,7 +114,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 3
 
   <section class="card mapcard">
     <div class="maptools">
-      <h3>Our route</h3>
+      <h3>Our route <span id="phKey" style="font-size:12px;font-weight:400;color:var(--muted)" hidden>· <span style="color:var(--gold)">●</span> tap a gold dot to see a photo</span></h3>
       <div class="seg" role="group" aria-label="Map view">
         <button data-view="europe" aria-pressed="true">Europe</button>
         <button data-view="world" aria-pressed="false">Whole trip</button>
@@ -242,7 +244,20 @@ function renderStops() {
   }).join("");
 }
 
-let view = "europe", world = null;
+let view = "europe", world = null, lastProj = null;
+function photoPins(proj, k) {
+  const g = d3.select("#map").append("g");
+  const seen = {};
+  (DATA.journal || []).forEach((p) => p.photos.forEach((x) => {
+    if (!x.ll) return;
+    const key = x.ll.join(","); if (seen[key]) return; seen[key] = 1;
+    const xy = proj([x.ll[1], x.ll[0]]); if (!xy || xy[0] < 0 || xy[0] > 960 || xy[1] < 0 || xy[1] > 560) return;
+    const i = PHOTOS.findIndex((q) => q.src === x.src);
+    g.append("circle").attr("class", "ph").attr("cx", xy[0]).attr("cy", xy[1]).attr("r", 4.5 * k).attr("stroke-width", 1.5 * k)
+      .attr("tabindex", 0).attr("role", "button").attr("aria-label", "Photo: " + (x.caption || fmtDay(p.date))).attr("data-ph", i)
+      .append("title").text((x.caption ? x.caption + " · " : "") + fmtDay(p.date));
+  }));
+}
 async function renderMap() {
   const svg = d3.select("#map"); svg.selectAll("*").remove();
   const w = 960, h = 560;
@@ -250,11 +265,12 @@ async function renderMap() {
   const proj = view === "world" ? d3.geoNaturalEarth1() : d3.geoMercator();
   const fc = { type: "FeatureCollection", features: stops.map((s) => ({ type: "Feature", geometry: { type: "Point", coordinates: [s.ll[1], s.ll[0]] } })) };
   proj.fitExtent([[50, 40], [w - 50, h - 40]], view === "world" ? { type: "Sphere" } : fc);
-  const path = d3.geoPath(proj);
+  const path = d3.geoPath(proj); lastProj = proj;
   svg.append("g").selectAll("path").data(world.features).join("path").attr("class", "land").attr("d", path);
   const line = { type: "LineString", coordinates: stops.filter((s) => s.id !== "home" || view === "world").map((s) => [s.ll[1], s.ll[0]]) };
   svg.append("path").attr("class", "route").attr("d", path(line));
   const g = svg.append("g");
+  const pg = svg.append("g");
   const k = Math.min(2.4, Math.max(1, 960 / (document.getElementById("map").clientWidth || 960)));
   svg.style("--k", k); g.style("font-size", (12 * k) + "px");
   stops.forEach((s, i) => {
@@ -271,6 +287,8 @@ async function renderMap() {
     g.append("text").attr("x", x + (right ? 9 : -9) * k).attr("y", y + (view === "world" ? (s.id === "cph" ? -12 : 4) : s.id === "str" ? 16 : s.id === "fre" || s.id === "nur" ? -8 : 4) * k).style("stroke-width", 3 * k + "px").attr("text-anchor", right ? "start" : "end").text((cur ? "📍 " : "") + name);
   });
 }
+const _renderMap = renderMap;
+renderMap = async function () { await _renderMap(); try { const svgEl = document.getElementById("map"); const k = Math.min(2.4, Math.max(1, 960 / (svgEl.clientWidth || 960))); photoPins(lastProj, k); } catch (e) {} };
 async function initMap() {
   try {
     const topo = await (await fetch("https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json")).json();
@@ -284,10 +302,12 @@ function setView(v) {
   if (world) renderMap();
 }
 document.addEventListener("click", (e) => { const b = e.target.closest("[data-view]"); if (b) setView(b.dataset.view); });
+document.addEventListener("keydown", (e) => { const c = e.target.closest && e.target.closest("#map [data-ph]"); if (c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); c.dispatchEvent(new MouseEvent("click", { bubbles: true })); } });
 let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (world) renderMap(); }, 200); });
 
 $("#upd").textContent = fmt(DATA.updated, { day: "numeric", month: "long", year: "numeric" });
 renderNow(); renderJournal(); renderStops();
+if ((DATA.journal || []).some((p) => p.photos.some((x) => x.ll))) $("#phKey").hidden = false;
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js" onload="initMap()" onerror="document.getElementById('mapErr').hidden=false"></script>

@@ -55,7 +55,10 @@ for f in sorted(glob.glob(os.path.join(BASE,"journal_dump/journal/*.json"))):
         pid = ph.get("id","")
         if not re.match(r"^[a-f0-9]{32}$", pid, re.I) or not os.path.exists(os.path.join(BASE,"friends/photos",pid+".jpg")): continue
         cap = (ph.get("caption") or "").strip() or PLAN_TITLES.get(ph.get("planId",""), "")
-        photos.append({"src":"photos/"+pid+".jpg","caption":cap[:140]})
+        ph_out = {"src":"photos/"+pid+".jpg","caption":cap[:140]}
+        if isinstance(ph.get("lat"),(int,float)) and isinstance(ph.get("lng"),(int,float)):
+            ph_out["ll"] = [round(ph["lat"],3), round(ph["lng"],3)]
+        photos.append(ph_out)
     JOURNAL.append({"date":x["date"],"stay":x.get("stay",""),"title":(x.get("title") or "")[:120],"text":(x.get("text") or "")[:4000],"photos":photos,"at":x.get("createdAt",0)})
 JOURNAL.sort(key=lambda j:(j["date"], j["at"]), reverse=True)
 data = {"journal":JOURNAL,"stops":STOPS,"days":DAYS,"travel":TRAVEL,"start":"2026-11-29","end":"2027-01-11","updated":datetime.date.today().isoformat()}

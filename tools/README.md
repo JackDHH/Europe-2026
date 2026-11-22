@@ -7,4 +7,4 @@ Used by Claude to regenerate `index.html` from the family travel planner.
 3. Run `python3 build_friends.py` to write `friends/index.html`.
 4. Copy `friends/index.html` and `friends/photos/` to the root of this repo and commit.
 
-Only journal posts marked "show on the family website" are included. Booking references, prices, addresses and exact times are never written to the site.
+Only journal posts marked "show on the family website" are included. Photo files are re-saved without hidden data, but each photo's location (rounded to about 100 m) is pinned on the map. Booking references, prices, addresses and exact times are never written to the site.
