@@ -1,11 +1,11 @@
-name: Update trip weather
+name: Update trip weather and exchange rates
 on:
   schedule:
     - cron: "7 * * * *"   # every hour
   workflow_dispatch: {}
   push:
     branches: [main]
-    paths: [".github/workflows/weather.yml", "tools/update_weather.py"]
+    paths: [".github/workflows/weather.yml", "tools/update_weather.py", "tools/update_fx.py"]
 permissions:
   contents: write
 jobs:
@@ -18,11 +18,13 @@ jobs:
           python-version: "3.12"
       - name: Fetch weather for where we are
         run: python3 tools/update_weather.py
+      - name: Fetch exchange rates (ECB, daily)
+        run: python3 tools/update_fx.py || echo "FX fetch failed, keeping the last rates"
       - name: Commit if changed
         run: |
           git config user.name "trip-weather-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add weather.js
-          git diff --cached --quiet || (git commit -m "Update weather" && git push)
+          git add weather.js fx.js 2>/dev/null || git add weather.js
+          git diff --cached --quiet || (git commit -m "Update weather and rates" && git push)
       - name: Refresh the CDN copy
-        run: curl -s https://purge.jsdelivr.net/gh/JackDHH/Europe-2026@main/weather.js || true
+        run: curl -s https://purge.jsdelivr.net/gh/JackDHH/Europe-2026@main/weather.js || true; curl -s https://purge.jsdelivr.net/gh/JackDHH/Europe-2026@main/fx.js || true
