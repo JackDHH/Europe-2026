@@ -1,1 +1,1 @@
-window.TRIP_FX = {"base": "AUD", "rates": {"EUR": 1.664392, "USD": 1.52209318, "GBP": 1.98783445, "DKK": 0.22268243, "IDR": 8.299e-05}, "date": "2026-11-25", "source": "European Central Bank via Frankfurter", "updatedAt": 1795638935816};
+window.TRIP_FX = {"base": "AUD", "rates": {"EUR": 1.65401346, "USD": 1.50706815, "GBP": 1.97480153, "DKK": 0.22130748, "IDR": 8.193e-05}, "date": "2026-11-26", "source": "European Central Bank via Frankfurter", "updatedAt": 1795708932056};
